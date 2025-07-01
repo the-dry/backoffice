@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="8e13ce83-3293-478a-bf0b-ea28f9c53af5" name="Teduca" url="https://backoffice.t-educa.cl">
+        <fileTransfer rootFolder="/backoffice" host="138.121.170.110" port="21">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
