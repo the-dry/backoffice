@@ -24,7 +24,23 @@
                                     </div>
                                 </form>
                             </div>
+                             <div class="px-4 pb-0 pt-0 text-end">
+                                <a href="{{ route('moodle.users.mass-create.form') }}" class="btn btn-success btn-sm mb-0">
+                                    <i class="material-icons text-sm">group_add</i>&nbsp;&nbsp;Creación Masiva de Usuarios
+                                </a>
+                            </div>
 
+                            @if(session('success'))
+                                <div class="alert alert-success alert-dismissible text-white fade show mx-4" role="alert">
+                                    <span class="alert-icon align-middle">
+                                        <span class="material-icons text-md">check_circle</span>
+                                    </span>
+                                    <span class="alert-text"><strong>Éxito!</strong> {{ session('success') }}</span>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            @endif
                             @if(session('error'))
                                 <div class="alert alert-danger alert-dismissible text-white fade show mx-4" role="alert">
                                     <span class="alert-icon align-middle">

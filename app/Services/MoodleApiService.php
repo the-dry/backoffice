@@ -114,4 +114,36 @@ class MoodleApiService
     //     // If you need OR for a single field (e.g. email = 'a' OR email = 'b'), it's often simpler to make multiple calls or fetch more data and filter locally.
     //     // However, for searching (LIKE), one criterion is fine: [['key' => 'email', 'value' => '%search%']]
     // }
+
+    /**
+     * Create users in Moodle.
+     * Corresponds to Moodle's `core_user_create_users`.
+     *
+     * @param array $usersData An array of user data arrays. Each user data array should conform to
+     *                         the structure expected by `core_user_create_users`.
+     *                         Required fields typically include: 'username', 'password', 'firstname', 'lastname', 'email'.
+     *                         Optional fields: 'idnumber', 'city', 'country', 'preferences', 'customfields', etc.
+     *                         Example:
+     *                         [
+     *                             [
+     *                                 'username' => 'newuser1',
+     *                                 'password' => 'Password123!',
+     *                                 'firstname' => 'New',
+     *                                 'lastname' => 'UserOne',
+     *                                 'email' => 'newuser1@example.com',
+     *                                 // 'auth' => 'manual', // or 'ldap', 'shibboleth' etc. if needed
+     *                                 // 'preferences' => [['type' => 'auth_forcepasswordchange', 'value' => 1]]
+     *                             ],
+     *                             // ... more users
+     *                         ]
+     * @return Response
+     * @throws RequestException
+     */
+    public function createUsers(array $usersData): Response
+    {
+        // The Moodle API expects parameters for arrays (like users) to be indexed.
+        // e.g., users[0][username], users[0][password], users[1][username] etc.
+        // Laravel's HTTP client should handle this correctly if we pass the array directly.
+        return $this->makeRequest('core_user_create_users', ['users' => $usersData]);
+    }
 }

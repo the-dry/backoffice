@@ -68,6 +68,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::prefix('moodle')->name('moodle.')->group(function () {
         Route::resource('users', MoodleUserController::class)->only(['index', 'show']);
         // Later, we can add routes for create, store, edit, update, destroy if direct manipulation via BackOffice is needed
-        // For mass creation, we'll likely have specific routes like /moodle/users/mass-create (GET for form, POST for action)
+
+        // Routes for Mass User Creation
+        Route::get('users/mass-create', [MoodleUserController::class, 'showMassCreateForm'])->name('users.mass-create.form');
+        Route::post('users/mass-create', [MoodleUserController::class, 'handleMassCreateUpload'])->name('users.mass-create.upload');
     });
 });
