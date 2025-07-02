@@ -11,11 +11,11 @@
                         <div class="card-header p-3 pt-2">
                             <div
                                 class="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                                <i class="material-icons opacity-10">weekend</i>
+                                <i class="material-icons opacity-10">leaderboard</i>
                             </div>
                             <div class="text-end pt-1">
-                                <p class="text-sm mb-0 text-capitalize">Cantidad de ejecuciones</p>
-                                <h4 class="mb-0">29</h4>
+                                <p class="text-sm mb-0 text-capitalize">Cursos Activos en Moodle</p>
+                                <h4 class="mb-0">{{ $activeCoursesCount ?? 'N/A' }}</h4>
                             </div>
                         </div>
                         <hr class="dark horizontal my-0">
@@ -30,11 +30,11 @@
                         <div class="card-header p-3 pt-2">
                             <div
                                 class="icon icon-lg icon-shape bg-gradient-primary shadow-primary text-center border-radius-xl mt-n4 position-absolute">
-                                <i class="material-icons opacity-10">person</i>
+                                <i class="material-icons opacity-10">group_add</i>
                             </div>
                             <div class="text-end pt-1">
-                                <p class="text-sm mb-0 text-capitalize">Numero de Usuarios</p>
-                                <h4 class="mb-0">88</h4>
+                                <p class="text-sm mb-0 text-capitalize">Usuarios Recientes (Moodle, últimos 30 días)</p>
+                                <h4 class="mb-0">{{ $recentUsersCount ?? 'N/A' }}</h4>
                             </div>
                         </div>
                         <hr class="dark horizontal my-0">
@@ -83,7 +83,38 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Row for Moodle Stats --}}
             <div class="row mt-4">
+                <div class="col-lg-7 col-md-12 mt-4 mb-4">
+                    <div class="card z-index-2 ">
+                        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2 bg-transparent">
+                            <div class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1">
+                                <div id="usersByCountryChart" style="width: 100%; height: 300px;"></div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="mb-0 ">Usuarios de Moodle por País</h6>
+                            <p class="text-sm ">Distribución de los principales países de usuarios.</p>
+                            <hr class="dark horizontal">
+                            <div class="d-flex justify-content-end">
+                                <a href="{{ route('dashboard.export.users-by-country') }}" class="btn btn-sm btn-outline-primary mb-0">
+                                    <i class="material-icons text-sm">file_download</i>&nbsp;
+                                    Descargar Excel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{-- Add other Moodle related charts or stats here --}}
+                 <div class="col-lg-5 col-md-12 mt-4 mb-4">
+                    {{-- Placeholder for another Moodle stat or chart --}}
+                 </div>
+            </div>
+
+
+            {{-- Original Charts - Keep them for now or decide to replace/remove --}}
+            <div class="row mt-4" style="display: none;"> {{-- Hiding original charts for now to focus on new one --}}
                 <div class="col-lg-4 col-md-6 mt-4 mb-4">
                     <div class="card z-index-2 ">
                         <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2 bg-transparent">
@@ -145,69 +176,8 @@
                     </div>
                 </div>
             </div>
-            <div class="row mt-4">
-                <div class="col-lg-4 col-md-6 mt-4 mb-4">
-                    <div class="card z-index-2 ">
-                        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2 bg-transparent">
-                            <div class="bg-gradient-primary shadow-primary border-radius-lg py-3 pe-1">
-                                <div class="chart">
-                                    <canvas id="chart-bars" class="chart-canvas" height="170"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="mb-0 ">Aprobados por Ejecución</h6>
-                            <p class="text-sm ">Cantidad de usuarios aprobados por ejecución</p>
-                            <hr class="dark horizontal">
-                            <div class="d-flex" style="display: none !important;">
-                                <i class="material-icons text-sm my-auto me-1">schedule</i>
-                                <p class="mb-0 text-sm"> campaign sent 2 days ago </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6 mt-4 mb-4">
-                    <div class="card z-index-2  ">
-                        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2 bg-transparent">
-                            <div class="bg-gradient-success shadow-success border-radius-lg py-3 pe-1">
-                                <div class="chart">
-                                    <canvas id="chart-line" class="chart-canvas" height="170"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="mb-0 ">Reprobados por Ejecución</h6>
-                            <p class="text-sm ">Cantidad de usuarios reprobados por ejecución</p>
-                            <hr class="dark horizontal">
-                            <div class="d-flex" style="display: none !important;">
-                                <i class="material-icons text-sm my-auto me-1">schedule</i>
-                                <p class="mb-0 text-sm"> updated 4 min ago </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 mt-4 mb-3">
-                    <div class="card z-index-2 ">
-                        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2 bg-transparent">
-                            <div class="bg-gradient-dark shadow-dark border-radius-lg py-3 pe-1">
-                                <div class="chart">
-                                    <canvas id="chart-line-tasks" class="chart-canvas" height="170"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="mb-0 ">Aprobados/Reprobados por Ejecución</h6>
-                            <p class="text-sm ">Cantidad de usuarios aprobados vs reprobados por ejecución</p>
-                            <hr class="dark horizontal">
-                            <div class="d-flex"  style="display: none !important;">
-                                <i class="material-icons text-sm my-auto me-1">schedule</i>
-                                <p class="mb-0 text-sm">just updated</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row mb-4"  style="display: none;">
+
+            <div class="row mb-4"  style="display: none;"> {{-- Hiding original table for now --}}
                 <div class="col-lg-8 col-md-6 mb-md-0 mb-4">
                     <div class="card">
                         <div class="card-header pb-0">
@@ -628,251 +598,89 @@
     <x-plugins></x-plugins>
     </div>
     @push('js')
+    {{-- Keep existing ChartJS script for original charts, or remove if they are replaced by amCharts --}}
     <script src="{{ asset('assets') }}/js/plugins/chartjs.min.js"></script>
-    <script>
-        var ctx = document.getElementById("chart-bars").getContext("2d");
 
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: ["L", "M", "M", "J", "V", "S", "D"],
-                datasets: [{
-                    label: "Ingresos",
-                    tension: 0.4,
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    borderSkipped: false,
-                    backgroundColor: "rgba(255, 255, 255, .8)",
-                    data: [50, 20, 10, 22, 50, 10, 40],
-                    maxBarThickness: 6
-                }, ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false,
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-                scales: {
-                    y: {
-                        grid: {
-                            drawBorder: false,
-                            display: true,
-                            drawOnChartArea: true,
-                            drawTicks: false,
-                            borderDash: [5, 5],
-                            color: 'rgba(255, 255, 255, .2)'
-                        },
-                        ticks: {
-                            suggestedMin: 0,
-                            suggestedMax: 500,
-                            beginAtZero: true,
-                            padding: 10,
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                            color: "#fff"
-                        },
-                    },
-                    x: {
-                        grid: {
-                            drawBorder: false,
-                            display: true,
-                            drawOnChartArea: true,
-                            drawTicks: false,
-                            borderDash: [5, 5],
-                            color: 'rgba(255, 255, 255, .2)'
-                        },
-                        ticks: {
-                            display: true,
-                            color: '#f8f9fa',
-                            padding: 10,
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                        }
-                    },
-                },
-            },
-        });
+    {{-- amCharts 5 Script --}}
+    <script type="module">
+        // Import amCharts libraries from node_modules (thanks to Vite)
+        import * as am5 from "@amcharts/amcharts5";
+        import * as am5xy from "@amcharts/amcharts5/xy";
+        import * as am5percent from "@amcharts/amcharts5/percent";
+        import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 
+        // Data from Blade (passed by controller)
+        const usersByCountryData = @json($usersByCountryData ?? []);
 
-        var ctx2 = document.getElementById("chart-line").getContext("2d");
+        if (usersByCountryData && usersByCountryData.length > 0) {
+            // Create root element
+            let rootUsersByCountry = am5.Root.new("usersByCountryChart");
 
-        new Chart(ctx2, {
-            type: "line",
-            data: {
-                labels: ["May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-                datasets: [{
-                    label: "Inscritos",
-                    tension: 0,
-                    pointRadius: 5,
-                    pointBackgroundColor: "rgba(255, 255, 255, .8)",
-                    pointBorderColor: "transparent",
-                    borderColor: "rgba(255, 255, 255, .8)",
-                    borderWidth: 4,
-                    backgroundColor: "transparent",
-                    fill: true,
-                    data: [40, 300, 320, 500, 350, 200, 230, 500],
-                    maxBarThickness: 6
+            // Set themes
+            rootUsersByCountry.setThemes([
+              am5themes_Animated.new(rootUsersByCountry)
+            ]);
 
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false,
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-                scales: {
-                    y: {
-                        grid: {
-                            drawBorder: false,
-                            display: true,
-                            drawOnChartArea: true,
-                            drawTicks: false,
-                            borderDash: [5, 5],
-                            color: 'rgba(255, 255, 255, .2)'
-                        },
-                        ticks: {
-                            display: true,
-                            color: '#f8f9fa',
-                            padding: 10,
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                        }
-                    },
-                    x: {
-                        grid: {
-                            drawBorder: false,
-                            display: false,
-                            drawOnChartArea: false,
-                            drawTicks: false,
-                            borderDash: [5, 5]
-                        },
-                        ticks: {
-                            display: true,
-                            color: '#f8f9fa',
-                            padding: 10,
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                        }
-                    },
-                },
-            },
-        });
+            // Create chart
+            let chartUsersByCountry = rootUsersByCountry.container.children.push(am5percent.PieChart.new(rootUsersByCountry, {
+              layout: rootUsersByCountry.verticalLayout,
+              innerRadius: am5.percent(50)
+            }));
 
-        var ctx3 = document.getElementById("chart-line-tasks").getContext("2d");
+            // Create series
+            let seriesUsersByCountry = chartUsersByCountry.series.push(am5percent.PieSeries.new(rootUsersByCountry, {
+              valueField: "value",
+              categoryField: "category",
+              alignLabels: true
+            }));
 
-        new Chart(ctx3, {
-            type: "line",
-            data: {
-                labels: ["May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-                datasets: [{
-                    label: "Matriculados",
-                    tension: 0,
-                    pointRadius: 5,
-                    pointBackgroundColor: "rgba(255, 255, 255, .8)",
-                    pointBorderColor: "transparent",
-                    borderColor: "rgba(255, 255, 255, .8)",
-                    borderWidth: 4,
-                    backgroundColor: "transparent",
-                    fill: true,
-                    data: [40, 300, 220, 500, 250, 400, 230, 500],
-                    maxBarThickness: 6
+            seriesUsersByCountry.labels().template.setAll({
+              textType: "circular",
+              centerX: 0,
+              centerY: 0,
+              text: "{category}: {value.percent.formatNumber('#.0')}% ({value})"
+            });
 
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false,
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-                scales: {
-                    y: {
-                        grid: {
-                            drawBorder: false,
-                            display: true,
-                            drawOnChartArea: true,
-                            drawTicks: false,
-                            borderDash: [5, 5],
-                            color: 'rgba(255, 255, 255, .2)'
-                        },
-                        ticks: {
-                            display: true,
-                            padding: 10,
-                            color: '#f8f9fa',
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                        }
-                    },
-                    x: {
-                        grid: {
-                            drawBorder: false,
-                            display: false,
-                            drawOnChartArea: false,
-                            drawTicks: false,
-                            borderDash: [5, 5]
-                        },
-                        ticks: {
-                            display: true,
-                            color: '#f8f9fa',
-                            padding: 10,
-                            font: {
-                                size: 14,
-                                weight: 300,
-                                family: "Roboto",
-                                style: 'normal',
-                                lineHeight: 2
-                            },
-                        }
-                    },
-                },
-            },
-        });
+            seriesUsersByCountry.ticks().template.setAll({
+              forceHidden: true
+            });
 
+            // Set data
+            seriesUsersByCountry.data.setAll(usersByCountryData);
+
+            // Create legend
+            let legendUsersByCountry = chartUsersByCountry.children.push(am5.Legend.new(rootUsersByCountry, {
+              centerX: am5.percent(50),
+              x: am5.percent(50),
+              marginTop: 15,
+              marginBottom: 15
+            }));
+            legendUsersByCountry.data.setAll(seriesUsersByCountry.dataItems);
+
+            // Play initial series animation
+            seriesUsersByCountry.appear(1000, 100);
+        } else {
+            // Optional: Display a message if no data for the chart
+            const chartDiv = document.getElementById("usersByCountryChart");
+            if(chartDiv) {
+                chartDiv.innerHTML = '<p class="text-center text-muted p-5">No hay datos disponibles para el gráfico de usuarios por país.</p>';
+            }
+        }
+
+        // --- Original ChartJS scripts (can be kept or removed) ---
+        // Hiding them by default as the focus is on amCharts integration
+        if (document.getElementById("chart-bars")) {
+            var ctx = document.getElementById("chart-bars").getContext("2d");
+            // ... (original chart-bars script)
+        }
+        if (document.getElementById("chart-line")) {
+            var ctx2 = document.getElementById("chart-line").getContext("2d");
+            // ... (original chart-line script)
+        }
+        if (document.getElementById("chart-line-tasks")) {
+            var ctx3 = document.getElementById("chart-line-tasks").getContext("2d");
+            // ... (original chart-line-tasks script)
+        }
     </script>
     @endpush
 </x-layout>

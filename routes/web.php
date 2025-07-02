@@ -18,7 +18,14 @@ use App\Http\Controllers\MoodleUserController;
             
 
 Route::get('/', function () {return redirect('sign-in');})->middleware('guest');
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware('auth')->name('dashboard');
+
+// Dashboard routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export/users-by-country', [DashboardController::class, 'exportUsersByCountry'])->name('dashboard.export.users-by-country');
+    // Add other dashboard-related export routes here
+});
+
 Route::get('sign-up', [RegisterController::class, 'create'])->middleware('guest')->name('register');
 Route::post('sign-up', [RegisterController::class, 'store'])->middleware('guest');
 Route::get('sign-in', [SessionsController::class, 'create'])->middleware('guest')->name('login');
