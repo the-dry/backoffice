@@ -146,4 +146,30 @@ class MoodleApiService
         // Laravel's HTTP client should handle this correctly if we pass the array directly.
         return $this->makeRequest('core_user_create_users', ['users' => $usersData]);
     }
+
+    /**
+     * Update users in Moodle.
+     * Corresponds to Moodle's `core_user_update_users`.
+     *
+     * @param array $usersData An array of user data arrays. Each user data array must include 'id' (Moodle user ID)
+     *                         and other fields to be updated.
+     *                         Example:
+     *                         [
+     *                             [
+     *                                 'id' => 123,
+     *                                 'email' => 'updateduser1@example.com',
+     *                                 'firstname' => 'UpdatedFirst',
+     *                                 // 'preferences' => [['type' => 'email_bounce', 'value' => 1]],
+     *                                 // 'customfields' => [['type' => 'profilefield_gender', 'value' => 'Female']]
+     *                             ],
+     *                             // ... more users to update
+     *                         ]
+     * @return Response
+     * @throws RequestException
+     */
+    public function updateUsers(array $usersData): Response
+    {
+        // Similar to createUsers, Moodle API expects indexed array parameters.
+        return $this->makeRequest('core_user_update_users', ['users' => $usersData]);
+    }
 }

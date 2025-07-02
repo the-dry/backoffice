@@ -72,5 +72,9 @@ Route::group(['middleware' => 'auth'], function () {
         // Routes for Mass User Creation
         Route::get('users/mass-create', [MoodleUserController::class, 'showMassCreateForm'])->name('users.mass-create.form');
         Route::post('users/mass-create', [MoodleUserController::class, 'handleMassCreateUpload'])->name('users.mass-create.upload');
+
+        // Routes for Mass User Update
+        Route::get('users/mass-update', [MoodleUserController::class, 'showMassUpdateForm'])->name('users.mass-update.form');
+        Route::post('users/mass-update', [MoodleUserController::class, 'handleMassUpdateUpload'])->name('users.mass-update.upload');
     });
 });
