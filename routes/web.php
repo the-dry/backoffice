@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\SessionsController;
+use App\Http\Controllers\MoodleUserController;
             
 
 Route::get('/', function () {return redirect('sign-in');})->middleware('guest');
@@ -62,4 +63,11 @@ Route::group(['middleware' => 'auth'], function () {
 	Route::get('user-profile', function () {
 		return view('pages.laravel-examples.user-profile');
 	})->name('user-profile');
+
+    // Moodle User Management Routes
+    Route::prefix('moodle')->name('moodle.')->group(function () {
+        Route::resource('users', MoodleUserController::class)->only(['index', 'show']);
+        // Later, we can add routes for create, store, edit, update, destroy if direct manipulation via BackOffice is needed
+        // For mass creation, we'll likely have specific routes like /moodle/users/mass-create (GET for form, POST for action)
+    });
 });

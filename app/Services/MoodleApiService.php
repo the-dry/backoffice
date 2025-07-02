@@ -70,6 +70,30 @@ class MoodleApiService
         return $this->makeRequest('core_webservice_get_site_info');
     }
 
+    /**
+     * Get users from Moodle.
+     * Corresponds to Moodle's `core_user_get_users`.
+     *
+     * @param array $criteria Criteria to search users. Example: [['key' => 'email', 'value' => '%@example.com%']]
+     *                         Refer to Moodle documentation for `core_user_get_users` for criteria options.
+     *                         Common keys: 'id', 'lastname', 'firstname', 'idnumber', 'username', 'email', 'city', 'country'.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getUsers(array $criteria = []): Response
+    {
+        // The core_user_get_users function expects criteria in a specific nested structure.
+        // $params = [];
+        // foreach ($criteria as $index => $criterion) {
+        //     $params["criteria[{$index}][key]"] = $criterion['key'];
+        //     $params["criteria[{$index}][value]"] = $criterion['value'];
+        // }
+        // The Http client might handle nested arrays directly, let's try that first.
+        // If not, the above commented structure or Http::asForm()->post($url, $flattenedParams) would be needed.
+
+        return $this->makeRequest('core_user_get_users', ['criteria' => $criteria]);
+    }
+
     // Example of a function that might take parameters
     // public function getUsersByField(string $field, array $values): Response
     // {
@@ -77,6 +101,17 @@ class MoodleApiService
     //         'field' => $field, // e.g., 'id', 'email'
     //         'values' => $values, // array of values
     //     ];
-    //     return $this->makeRequest('core_user_get_users_by_field', $params);
+    //     // core_user_get_users_by_field is deprecated, use core_user_get_users with criteria instead.
+    //     // Example criteria for getUsersByField('email', ['user1@example.com', 'user2@example.com']):
+    //     // $criteria = [];
+    //     // foreach ($values as $value) {
+    //     //    $criteria[] = ['key' => $field, 'value' => $value];
+    //     // }
+    //     // return $this->getUsers($criteria);
+    //
+    //     // For single field matching multiple OR values, Moodle might require separate calls or specific criteria formatting.
+    //     // The typical use of core_user_get_users is more like SQL AND conditions for multiple criteria items.
+    //     // If you need OR for a single field (e.g. email = 'a' OR email = 'b'), it's often simpler to make multiple calls or fetch more data and filter locally.
+    //     // However, for searching (LIKE), one criterion is fine: [['key' => 'email', 'value' => '%search%']]
     // }
 }

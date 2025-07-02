@@ -115,6 +115,20 @@
                     <span class="nav-link-text ms-1">Usuarios</span>
                 </a>
             </li>
+
+            <li class="nav-item mt-3">
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-dark font-weight-bolder opacity-8">Gestión Moodle</h6>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark {{ $activePage == 'moodle-users' ? 'active bg-gradient-primary' : '' }} "
+                   href="{{ route('moodle.users.index') }}">
+                    <div class="text-dark text-center me-2 d-flex align-items-center justify-content-center">
+                        <i style="font-size: 1rem;" class="fas fa-users ps-2 pe-2 text-center"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Usuarios Moodle</span>
+                </a>
+            </li>
+            {{-- Add other Moodle related links here as modules are built --}}
         </ul>
     </div>
 </aside>
