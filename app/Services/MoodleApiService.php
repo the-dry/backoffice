@@ -172,4 +172,50 @@ class MoodleApiService
         // Similar to createUsers, Moodle API expects indexed array parameters.
         return $this->makeRequest('core_user_update_users', ['users' => $usersData]);
     }
+
+    /**
+     * Get courses from Moodle.
+     * Corresponds to Moodle's `core_course_get_courses`.
+     * Optionally filter by course IDs.
+     *
+     * @param array $courseIds Optional array of Moodle course IDs to filter by.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getCourses(array $courseIds = []): Response
+    {
+        $params = [];
+        if (!empty($courseIds)) {
+            // The API expects options[ids][0], options[ids][1]...
+            // $params = ['options' => ['ids' => $courseIds]]; // This might work directly with Laravel HTTP client
+            // Or, build it manually if needed:
+            foreach ($courseIds as $index => $id) {
+                $params["options[ids][{$index}]"] = $id;
+            }
+        }
+        return $this->makeRequest('core_course_get_courses', $params);
+    }
+
+    /**
+     * Enrol users in a Moodle course.
+     * Corresponds to Moodle's `enrol_manual_enrol_users`.
+     *
+     * @param array $enrolments Array of enrolment data. Each item should be an array with:
+     *                          'roleid' => int (e.g., 5 for student),
+     *                          'userid' => int (Moodle user ID),
+     *                          'courseid' => int (Moodle course ID),
+     *                          Optional: 'timestart', 'timeend', 'suspend'
+     *                         Example:
+     *                         [
+     *                             ['roleid' => 5, 'userid' => 123, 'courseid' => 1],
+     *                             ['roleid' => 5, 'userid' => 124, 'courseid' => 1, 'timestart' => time() + 3600],
+     *                         ]
+     * @return Response
+     * @throws RequestException
+     */
+    public function enrolUsers(array $enrolments): Response
+    {
+        // API expects enrolments[0][roleid], enrolments[0][userid], etc.
+        return $this->makeRequest('enrol_manual_enrol_users', ['enrolments' => $enrolments]);
+    }
 }

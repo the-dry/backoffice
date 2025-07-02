@@ -417,4 +417,161 @@ class MoodleUserController extends Controller
 
         return redirect()->route('moodle.users.index')->with('success', $feedbackMessage);
     }
+
+    public function showMassEnrolmentForm(Request $request)
+    {
+        // Fetch courses for selection
+        // For simplicity, fetch all courses. In a real scenario, might need search/pagination for courses.
+        $courses = [];
+        $moodleUsersRaw = [];
+        $usersSearchTerm = $request->input('user_search', '');
+
+        try {
+            $coursesResponse = $this->moodleApiService->getCourses();
+            if ($coursesResponse->successful()) {
+                $courses = $coursesResponse->json();
+                 // Filter out courses that might not be suitable for enrollment (e.g. site home)
+                if (is_array($courses)) {
+                    $courses = array_filter($courses, fn($course) => isset($course['id']) && $course['id'] != 1 && ($course['format'] ?? '') !== 'site');
+                } else {
+                    $courses = []; // Ensure it's an array
+                }
+            } else {
+                session()->flash('error', 'No se pudieron cargar los cursos de Moodle.');
+            }
+
+            // Fetch users for selection (similar to index method, but perhaps simplified for a selection list)
+            $userCriteria = [];
+            if (!empty($usersSearchTerm)) {
+                 $userCriteria[] = ['key' => 'email', 'value' => '%' . $usersSearchTerm . '%'];
+                 // Add more criteria if needed, e.g. by fullname:
+                 // $userCriteria[] = ['key' => 'fullname', 'value' => '%' . $usersSearchTerm . '%'];
+            }
+            // To avoid loading ALL users if no search, you might want to enforce a search or show none by default.
+            // For this example, if no search term, we won't fetch users initially to avoid overload.
+            // Or, fetch a small, manageable initial list.
+            if (!empty($userCriteria) || empty($usersSearchTerm)) { // Load all if no search, or based on criteria
+                $usersResponse = $this->moodleApiService->getUsers($userCriteria);
+                if ($usersResponse->successful()) {
+                    $usersData = $usersResponse->json();
+                    $moodleUsersRaw = $usersData['users'] ?? ($usersData ?? []);
+                     if (is_array($moodleUsersRaw) && isset($moodleUsersRaw['users']) && is_array($moodleUsersRaw['users'])) { // Handle Moodle's inconsistent response
+                        $moodleUsersRaw = $moodleUsersRaw['users'];
+                    }
+                } else {
+                    session()->flash('user_fetch_error', 'No se pudieron cargar los usuarios de Moodle para la búsqueda.');
+                }
+            }
+
+
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            session()->flash('error', 'Error de conexión con Moodle: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('error', 'Error inesperado: ' . $e->getMessage());
+        }
+
+        // Simple pagination for users if many are loaded
+        $perPage = 100; // Show more users for selection context
+        $currentPage = Paginator::resolveCurrentPage('user_page');
+        $currentUsers = array_slice($moodleUsersRaw, ($currentPage - 1) * $perPage, $perPage);
+        $paginatedUsers = new LengthAwarePaginator($currentUsers, count($moodleUsersRaw), $perPage, $currentPage, [
+            'path' => Paginator::resolveCurrentPath(),
+            'pageName' => 'user_page',
+        ]);
+        $paginatedUsers->appends($request->except('user_page'));
+
+
+        // Moodle roles (standard roles - ID might vary per Moodle site, but these are common defaults)
+        // It's better to fetch these from Moodle (e.g. core_role_get_roles) or make them configurable.
+        $roles = [
+            // roleid => display name
+            5 => 'Estudiante', // Common default for student
+            4 => 'Profesor sin permiso de edición', // Common default for non-editing teacher
+            3 => 'Profesor',      // Common default for editing teacher
+            // Add other relevant roles
+        ];
+
+
+        return view('moodle.enrolments.mass-create', [
+            'courses' => $courses,
+            'users' => $paginatedUsers,
+            'roles' => $roles,
+            'usersSearchTerm' => $usersSearchTerm
+        ]);
+    }
+
+    public function handleMassEnrolment(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|integer',
+            'role_id' => 'required|integer',
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'integer', // Validate each user ID in the array
+        ]);
+
+        $courseId = $request->input('course_id');
+        $roleId = $request->input('role_id');
+        $userIds = $request->input('user_ids');
+
+        $enrolments = [];
+        foreach ($userIds as $userId) {
+            $enrolments[] = [
+                'roleid' => (int)$roleId,
+                'userid' => (int)$userId,
+                'courseid' => (int)$courseId,
+                // 'timestart' => null, // Optional: enrolment start date (timestamp)
+                // 'timeend' => null,   // Optional: enrolment end date (timestamp)
+                // 'suspend' => 0,      // Optional: 0 or 1
+            ];
+        }
+
+        $successCount = 0;
+        $errors = [];
+
+        if (!empty($enrolments)) {
+            try {
+                $response = $this->moodleApiService->enrolUsers($enrolments);
+
+                if ($response->successful()) {
+                    // enrol_manual_enrol_users returns null on success or an error object.
+                    // It does not return a list of successful enrolments.
+                    // We assume all were successful if no error.
+                    $responseData = $response->json(); // Moodle often returns null for this on success
+                    if ($responseData === null) { // Explicitly check for null, common success response
+                        $successCount = count($enrolments);
+                    } else if (is_array($responseData) && empty($responseData)) { // Also possible success
+                         $successCount = count($enrolments);
+                    } else if (is_array($responseData) && isset($responseData['exception'])) {
+                        $errors[] = "Error de Moodle API: " . $responseData['message'] . " (Code: " . $responseData['errorcode'] . ")";
+                    } else if (is_array($responseData) && !empty($responseData)) {
+                        // If it's not an exception, and not empty/null, it might contain partial success/failure info or warnings.
+                        // This part needs careful checking against actual Moodle responses.
+                        // For now, if it's not null and not an exception, assume it's a success but log the response for review.
+                        \Illuminate\Support\Facades\Log::warning('Moodle enrolUsers unexpected successful response structure: ', $responseData);
+                        $successCount = count($enrolments); // Optimistic
+                        $errors[] = "Respuesta inesperada de Moodle, pero la operación HTTP fue exitosa. Revise los logs y Moodle para confirmar.";
+                    } else {
+                         $errors[] = "Respuesta desconocida de Moodle tras la inscripción.";
+                    }
+
+                } else {
+                    $apiError = $response->json();
+                    $errors[] = 'Error en API de Moodle al inscribir usuarios: ' . ($apiError['message'] ?? $response->body());
+                }
+            } catch (\Illuminate\Http\Client\RequestException $e) {
+                $errors[] = 'Error de conexión al inscribir usuarios en Moodle: ' . $e->getMessage();
+            } catch (\Exception $e) {
+                $errors[] = 'Error inesperado durante la inscripción masiva: ' . $e->getMessage();
+            }
+        }
+
+        $attemptedCount = count($enrolments);
+        $feedbackMessage = "Proceso de inscripción masiva completado. Intentos: {$attemptedCount}. Exitosos: {$successCount}.";
+
+        if (!empty($errors)) {
+            return back()->with('error', $feedbackMessage)->with('upload_errors', $errors)->withInput();
+        }
+
+        return redirect()->route('moodle.enrolments.mass-create.form')->with('success', $feedbackMessage);
+    }
 }
