@@ -16,6 +16,7 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\SessionsController;
 use App\Http\Controllers\MoodleUserController;
 use App\Http\Controllers\MoodleReportController;
+use App\Http\Controllers\MoodleCertificateController;
             
 
 Route::get('/', function () {return redirect('sign-in');})->middleware('guest');
@@ -94,6 +95,16 @@ Route::group(['middleware' => 'auth'], function () {
             Route::get('course-progress', [MoodleReportController::class, 'showCourseProgressReportForm'])->name('course-progress.form');
             Route::post('course-progress', [MoodleReportController::class, 'generateCourseProgressReport'])->name('course-progress.generate');
             Route::get('course-progress/export', [MoodleReportController::class, 'exportCourseProgressReport'])->name('course-progress.export');
+        });
+
+        // Moodle Certificate Management Routes
+        Route::prefix('certificates')->name('certificates.')->group(function () {
+            Route::get('issued', [MoodleCertificateController::class, 'indexIssued'])->name('issued.index');
+            // Add export route for issued certificates later
+            // Route::get('issued/export', [MoodleCertificateController::class, 'exportIssuedCertificates'])->name('issued.export');
+
+            Route::get('issue', [MoodleCertificateController::class, 'showIssueForm'])->name('issue.form');
+            Route::post('issue', [MoodleCertificateController::class, 'handleIssueCertificate'])->name('issue.submit');
         });
     });
 });

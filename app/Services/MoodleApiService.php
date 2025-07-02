@@ -293,4 +293,80 @@ class MoodleApiService
         }
         return $this->makeRequest('core_enrol_get_enrolled_users', $params);
     }
+
+    /**
+     * Get certificate templates available in courses.
+     * Assumes use of `mod_customcert` plugin.
+     * Corresponds to Moodle's `mod_customcert_get_customcerts_by_courses`.
+     *
+     * @param array $courseIds Array of Moodle course IDs.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getCertificateTemplatesByCourses(array $courseIds): Response
+    {
+        // API expects courseids[0]=id1, courseids[1]=id2 ...
+        $params = [];
+        foreach ($courseIds as $index => $id) {
+            $params["courseids[{$index}]"] = $id;
+        }
+        return $this->makeRequest('mod_customcert_get_customcerts_by_courses', $params);
+    }
+
+    /**
+     * Issue a certificate to a user.
+     * Assumes use of `mod_customcert` plugin.
+     * Corresponds to Moodle's `mod_customcert_issue_certificate`.
+     *
+     * @param int $certificateId The ID of the custom certificate template.
+     * @param int $userId The Moodle user ID.
+     * @return Response
+     * @throws RequestException
+     */
+    public function issueCertificate(int $certificateId, int $userId): Response
+    {
+        return $this->makeRequest('mod_customcert_issue_certificate', [
+            'customcertid' => $certificateId, // Parameter name might be 'customcertid' or 'certificateid'
+            'userid' => $userId,
+        ]);
+    }
+
+    /**
+     * Get issued certificates for a user in a course or for a specific certificate template.
+     * This function is HYPOTHETICAL as `mod_customcert` might not have a direct WS for this.
+     * Often, issued certificates are linked to the user's profile or course participation.
+     * We might need to list issued certificates by other means, or this function might not be available.
+     * A common way is to check `mod_customcert_get_user_certificates` if available,
+     * or infer from `mod_customcert_get_customcert_issues`.
+     *
+     * For now, let's assume a function like `mod_customcert_get_issued_certificates` exists or can be created.
+     * Parameters would likely be courseid and/or userid.
+     *
+     * @param array $criteria Example: ['courseid' => 1, 'userid' => 2] or ['customcertid' => 3]
+     * @return Response
+     * @throws RequestException
+     */
+    public function getIssuedCertificates(array $criteria): Response
+    {
+        // This is a placeholder. The actual function and parameters will depend on Moodle's capabilities.
+        // Example call if a function `mod_customcert_get_user_certificates` existed:
+        // if (isset($criteria['userid'])) {
+        //     return $this->makeRequest('mod_customcert_get_user_certificates', [
+        //         'userid' => $criteria['userid'],
+        //         'courseid' => $criteria['courseid'] ?? 0, // Optional course ID
+        //     ]);
+        // }
+        // Or for all issues of a certificate template:
+        // if (isset($criteria['customcertid'])) {
+        //    return $this->makeRequest('mod_customcert_get_customcert_issues', ['customcertid' => $criteria['customcertid']]);
+        // }
+
+        // For now, returning a dummy response structure indicating function needs real implementation.
+        Log::warning('MoodleApiService::getIssuedCertificates is a placeholder and needs actual Moodle API function.');
+        $dummyResponse = new \Illuminate\Http\Client\Response(new \GuzzleHttp\Psr7\Response(200, [], json_encode([
+            'issuedcertificates' => [],
+            'warnings' => [['item' => 'getIssuedCertificates', 'warningcode' => 'notimplemented', 'message' => 'This Moodle API function is a placeholder.']]
+        ])));
+        return $dummyResponse; // This will allow controller logic to be written.
+    }
 }
