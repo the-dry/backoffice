@@ -218,4 +218,79 @@ class MoodleApiService
         // API expects enrolments[0][roleid], enrolments[0][userid], etc.
         return $this->makeRequest('enrol_manual_enrol_users', ['enrolments' => $enrolments]);
     }
+
+    /**
+     * Get the completion status of a user in a specific course.
+     * Corresponds to Moodle's `core_completion_get_course_completion_status`.
+     *
+     * @param int $courseId The Moodle course ID.
+     * @param int $userId The Moodle user ID.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getCourseCompletionStatus(int $courseId, int $userId): Response
+    {
+        return $this->makeRequest('core_completion_get_course_completion_status', [
+            'courseid' => $courseId,
+            'userid' => $userId,
+        ]);
+    }
+
+    /**
+     * Get grade items (grades) for a user in a specific course.
+     * Corresponds to Moodle's `gradereport_user_get_grade_items`.
+     *
+     * @param int $courseId The Moodle course ID.
+     * @param int $userId The Moodle user ID.
+     * @param int|null $groupId Optional group ID.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getUserGradesInCourse(int $courseId, int $userId, ?int $groupId = null): Response
+    {
+        $params = [
+            'courseid' => $courseId,
+            'userid' => $userId,
+        ];
+        if ($groupId !== null) {
+            $params['groupid'] = $groupId;
+        }
+        return $this->makeRequest('gradereport_user_get_grade_items', $params);
+    }
+
+    /**
+     * Get users enrolled in a specific course.
+     * Corresponds to Moodle's `core_enrol_get_enrolled_users`.
+     *
+     * @param int $courseId The Moodle course ID.
+     * @param array $options Optional array of options (e.g., 'withcapability', 'groupid', 'onlyactive', 'userfields').
+     *                       Example: [['name' => 'userfields', 'value' => 'id,fullname,email']]
+     * @return Response
+     * @throws RequestException
+     */
+    public function getEnrolledUsersInCourse(int $courseId, array $options = []): Response
+    {
+        $params = ['courseid' => $courseId];
+        if (!empty($options)) {
+            // Moodle expects options as options[0][name], options[0][value]
+            // For simplicity in this helper, we might directly map known options
+            // or require the caller to format the options array correctly.
+            // Example: if (isset($options['userfields'])) $params['options[0][name]'] = 'userfields'; $params['options[0][value]'] = implode(',', $options['userfields']);
+            // For now, let's assume options are passed pre-formatted if complex.
+            // A simpler way if options are direct key-values for the API:
+            // $params['options'] = $options; // This might work if Http client handles array nesting for 'options'
+
+            // Let's use the indexed format for options as it's more reliable for Moodle
+            $moodleOptions = [];
+            foreach ($options as $key => $option) {
+                 if (is_array($option) && isset($option['name']) && isset($option['value'])) {
+                    $moodleOptions[] = $option; // Assumes options are already in Moodle's expected [{name:x, value:y}] format
+                }
+            }
+            if (!empty($moodleOptions)) {
+                $params['options'] = $moodleOptions;
+            }
+        }
+        return $this->makeRequest('core_enrol_get_enrolled_users', $params);
+    }
 }

@@ -15,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\SessionsController;
 use App\Http\Controllers\MoodleUserController;
+use App\Http\Controllers\MoodleReportController;
             
 
 Route::get('/', function () {return redirect('sign-in');})->middleware('guest');
@@ -87,5 +88,12 @@ Route::group(['middleware' => 'auth'], function () {
         // Routes for Course Enrolment
         Route::get('enrolments/create', [MoodleUserController::class, 'showMassEnrolmentForm'])->name('enrolments.mass-create.form');
         Route::post('enrolments/create', [MoodleUserController::class, 'handleMassEnrolment'])->name('enrolments.mass-create.submit');
+
+        // Moodle Reports Routes
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('course-progress', [MoodleReportController::class, 'showCourseProgressReportForm'])->name('course-progress.form');
+            Route::post('course-progress', [MoodleReportController::class, 'generateCourseProgressReport'])->name('course-progress.generate');
+            Route::get('course-progress/export', [MoodleReportController::class, 'exportCourseProgressReport'])->name('course-progress.export');
+        });
     });
 });

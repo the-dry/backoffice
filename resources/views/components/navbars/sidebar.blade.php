@@ -137,6 +137,15 @@
                     <span class="nav-link-text ms-1">Inscripción Masiva</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark {{ $activePage == 'moodle-reports-course-progress' ? 'active bg-gradient-primary' : '' }} "
+                   href="{{ route('moodle.reports.course-progress.form') }}">
+                    <div class="text-dark text-center me-2 d-flex align-items-center justify-content-center">
+                        <i style="font-size: 1rem;" class="fas fa-chart-line ps-2 pe-2 text-center"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Reporte Progreso Curso</span>
+                </a>
+            </li>
             {{-- Add other Moodle related links here as modules are built --}}
         </ul>
     </div>
