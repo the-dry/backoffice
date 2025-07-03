@@ -171,4 +171,163 @@ class MoodleReportController extends Controller
 
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\CourseProgressExport($reportData, $courseName), $fileName);
     }
+
+    /**
+     * Show a form to select a course for the detailed analysis report.
+     */
+    public function showDetailedCourseAnalysisForm(Request $request)
+    {
+        $courses = [];
+        try {
+            $coursesResponse = $this->moodleApiService->getCourses();
+            if ($coursesResponse->successful()) {
+                $coursesData = $coursesResponse->json();
+                if (is_array($coursesData)) {
+                    $courses = array_filter($coursesData, fn($course) => isset($course['id']) && $course['id'] != 1 && ($course['format'] ?? '') !== 'site');
+                }
+            } else {
+                session()->flash('error', 'No se pudieron cargar los cursos de Moodle.');
+            }
+        } catch (\Exception $e) {
+            Log::error('Error fetching courses for detailed analysis form: ' . $e->getMessage());
+            session()->flash('error', 'Error de conexión al cargar cursos: ' . $e->getMessage());
+        }
+
+        return view('moodle.reports.detailed-course-analysis-form', compact('courses'));
+    }
+
+    /**
+     * Generate and display the detailed course analysis report.
+     */
+    public function generateDetailedCourseAnalysisReport(Request $request)
+    {
+        $request->validate(['course_id' => 'required|integer']);
+        $courseId = $request->input('course_id');
+        $courseDetails = null;
+        $reportData = []; // Structure: ['user_id' => ['user_info' => ..., 'activities' => [...]]]
+        $courseActivities = []; // Structure: ['id' => ..., 'name' => ..., 'modname' => ...]
+
+        try {
+            // 1. Get Course Details
+            $courseResponse = $this->moodleApiService->getCourses([$courseId]);
+            if ($courseResponse->successful() && !empty($courseResponse->json())) {
+                $courseDetails = $courseResponse->json()[0] ?? null;
+            }
+            if (!$courseDetails) {
+                return redirect()->route('moodle.reports.detailed-course-analysis.form')->with('error', 'Curso no encontrado.');
+            }
+
+            // 2. Get Course Contents (Activities/Modules)
+            $contentsResponse = $this->moodleApiService->getCourseContents($courseId);
+            if ($contentsResponse->successful()) {
+                $sections = $contentsResponse->json();
+                if (is_array($sections)) {
+                    foreach ($sections as $section) {
+                        if (isset($section['modules']) && is_array($section['modules'])) {
+                            foreach ($section['modules'] as $module) {
+                                if (isset($module['id']) && isset($module['name']) && isset($module['modname'])) {
+                                     // We only care about activities that can be graded or have completion
+                                    if (in_array($module['modname'], ['assign', 'quiz', 'lesson', 'forum', 'scorm', 'h5pactivity', 'url', 'page', 'resource', 'folder'])) { // Example list
+                                        $courseActivities[] = [
+                                            'id' => $module['id'], // This is cmid (course module id)
+                                            'name' => $module['name'],
+                                            'modname' => $module['modname'],
+                                            'instance' => $module['instance'] ?? null, // Instance ID of the module (e.g. assignid)
+                                        ];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                 Log::warning("Could not fetch contents for course {$courseId}");
+            }
+
+            if (empty($courseActivities)) {
+                // No relevant activities or failed to fetch, but can still show enrolled users.
+                // Or return with a message. For now, proceed to show users.
+            }
+
+
+            // 3. Get Enrolled Users
+            $enrolledUsersResponse = $this->moodleApiService->getEnrolledUsersInCourse($courseId, [['name' => 'userfields', 'value' => 'id,fullname,email,username']]);
+            if ($enrolledUsersResponse->successful()) {
+                $moodleUsers = $enrolledUsersResponse->json();
+                if (is_array($moodleUsers)) {
+                    foreach ($moodleUsers as $user) {
+                        if (!isset($user['id'])) continue;
+
+                        $userId = $user['id'];
+                        $currentUserData = [
+                            'user_info' => $user,
+                            'activities' => []
+                        ];
+
+                        // 4. For each user, get activity completion and grades
+                        if (!empty($courseActivities)) {
+                            $activityCompletionResponse = $this->moodleApiService->getActivitiesCompletionStatus($courseId, $userId);
+                            $activityCompletions = [];
+                            if ($activityCompletionResponse->successful() && isset($activityCompletionResponse->json()['statuses'])) {
+                                foreach($activityCompletionResponse->json()['statuses'] as $status) {
+                                    $activityCompletions[$status['cmid']] = $status;
+                                }
+                            }
+
+                            foreach ($courseActivities as $activity) {
+                                $cmid = $activity['id'];
+                                $activityData = [
+                                    'cmid' => $cmid,
+                                    'name' => $activity['name'],
+                                    'modname' => $activity['modname'],
+                                    'completion_state' => 'N/A', // 0=incomplete, 1=complete, 2=complete pass, 3=complete fail
+                                    'grade' => 'N/A',
+                                ];
+
+                                if (isset($activityCompletions[$cmid])) {
+                                    $comp = $activityCompletions[$cmid];
+                                    switch ($comp['state']) {
+                                        case 0: $activityData['completion_state'] = 'Incompleto'; break;
+                                        case 1: $activityData['completion_state'] = 'Completo'; break;
+                                        case 2: $activityData['completion_state'] = 'Completo (Aprobado)'; break; // May not apply to all
+                                        case 3: $activityData['completion_state'] = 'Completo (Reprobado)'; break; // May not apply to all
+                                        default: $activityData['completion_state'] = 'Desconocido';
+                                    }
+                                }
+
+                                // Fetching individual activity grades can be very API intensive.
+                                // gradereport_user_get_grade_items gives all grades for a user in a course.
+                                // We already fetch this in the simple progress report.
+                                // For this detailed one, if we need specific activity grades not in the main gradebook summary,
+                                // we might need calls like `mod_assign_get_submission_status` or `mod_quiz_get_user_attempts`.
+                                // This requires knowing the 'instance' ID of the module.
+                                // For simplicity, we'll rely on the overall grade report for now or leave specific activity grades as N/A.
+                                // If we had `mod_assign_get_grades` for specific assignment instances:
+                                // if ($activity['modname'] === 'assign' && $activity['instance']) {
+                                //    $assignGradesResp = $this->moodleApiService->getAssignmentGrades([$activity['instance']]); // This API gets grades for ALL users for the assignment.
+                                //    // Then filter for current $userId. This is not efficient if done per user.
+                                // }
+                                $currentUserData['activities'][$cmid] = $activityData;
+                            }
+                        }
+                        $reportData[$userId] = $currentUserData;
+                    }
+                }
+            } else {
+                return redirect()->route('moodle.reports.detailed-course-analysis.form')->with('error', 'No se pudieron obtener los usuarios inscritos.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error generating detailed course analysis report: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->route('moodle.reports.detailed-course-analysis.form')->with('error', 'Error al generar el reporte detallado: ' . $e->getMessage());
+        }
+
+        session([
+            'detailed_course_analysis_data' => $reportData,
+            'detailed_course_analysis_activities' => $courseActivities,
+            'detailed_course_analysis_course_name' => $courseDetails['fullname'] ?? 'Análisis_Detallado'
+        ]);
+
+        return view('moodle.reports.detailed-course-analysis-show', compact('courseDetails', 'reportData', 'courseActivities'));
+    }
 }

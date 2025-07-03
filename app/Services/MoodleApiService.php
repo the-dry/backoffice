@@ -369,4 +369,62 @@ class MoodleApiService
         ])));
         return $dummyResponse; // This will allow controller logic to be written.
     }
+
+    /**
+     * Get course contents (modules, activities).
+     * Corresponds to Moodle's `core_course_get_contents`.
+     *
+     * @param int $courseId The Moodle course ID.
+     * @param array $options Optional options for the webservice function.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getCourseContents(int $courseId, array $options = []): Response
+    {
+        return $this->makeRequest('core_course_get_contents', ['courseid' => $courseId, 'options' => $options]);
+    }
+
+    /**
+     * Get completion status for activities within a course for a user.
+     * Corresponds to Moodle's `core_completion_get_activities_completion_status`.
+     *
+     * @param int $courseId The Moodle course ID.
+     * @param int $userId The Moodle user ID.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getActivitiesCompletionStatus(int $courseId, int $userId): Response
+    {
+        return $this->makeRequest('core_completion_get_activities_completion_status', [
+            'courseid' => $courseId,
+            'userid' => $userId
+        ]);
+    }
+
+    /**
+     * Get grades for assignments in a specific course.
+     * Corresponds to Moodle's `mod_assign_get_grades`.
+     *
+     * @param array $assignmentIds Array of assignment instance IDs.
+     * @param int|null $since Optional: only grades updated since this timestamp.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getAssignmentGrades(array $assignmentIds, ?int $since = null): Response
+    {
+        $params = [];
+        // Moodle expects assignmentids[0]=id1, assignmentids[1]=id2 ...
+        foreach ($assignmentIds as $index => $id) {
+            $params["assignmentids[{$index}]"] = $id;
+        }
+        if ($since !== null) {
+            $params['since'] = $since;
+        }
+        return $this->makeRequest('mod_assign_get_grades', $params);
+    }
+
+    // Note: For other activity types like quizzes, forums, etc., specific API functions would be needed:
+    // e.g., `mod_quiz_get_user_attempts`, `mod_quiz_get_user_best_grade` for quizzes.
+    // `forum_get_discussion_posts` etc. for forums.
+    // These would be added here as required for specific reports.
 }

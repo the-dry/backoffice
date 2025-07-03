@@ -95,6 +95,10 @@ Route::group(['middleware' => 'auth'], function () {
             Route::get('course-progress', [MoodleReportController::class, 'showCourseProgressReportForm'])->name('course-progress.form');
             Route::post('course-progress', [MoodleReportController::class, 'generateCourseProgressReport'])->name('course-progress.generate');
             Route::get('course-progress/export', [MoodleReportController::class, 'exportCourseProgressReport'])->name('course-progress.export');
+
+            Route::get('detailed-course-analysis', [MoodleReportController::class, 'showDetailedCourseAnalysisForm'])->name('detailed-course-analysis.form');
+            Route::post('detailed-course-analysis', [MoodleReportController::class, 'generateDetailedCourseAnalysisReport'])->name('detailed-course-analysis.generate');
+            // Add export route later: Route::get('detailed-course-analysis/export', [MoodleReportController::class, 'exportDetailedCourseAnalysisReport'])->name('detailed-course-analysis.export');
         });
 
         // Moodle Certificate Management Routes
