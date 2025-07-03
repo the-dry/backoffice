@@ -173,6 +173,15 @@
                     <span class="nav-link-text ms-1">Análisis Detallado Curso</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark {{ $activePage == 'moodle-courses' ? 'active bg-gradient-primary' : '' }} "
+                   href="{{ route('moodle.courses.index') }}">
+                    <div class="text-dark text-center me-2 d-flex align-items-center justify-content-center">
+                        <i style="font-size: 1rem;" class="fas fa-chalkboard-teacher ps-2 pe-2 text-center"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Gestión de Cursos</span>
+                </a>
+            </li>
             {{-- Add other Moodle related links here as modules are built --}}
         </ul>
     </div>

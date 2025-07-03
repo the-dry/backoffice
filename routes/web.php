@@ -17,6 +17,7 @@ use App\Http\Controllers\SessionsController;
 use App\Http\Controllers\MoodleUserController;
 use App\Http\Controllers\MoodleReportController;
 use App\Http\Controllers\MoodleCertificateController;
+use App\Http\Controllers\MoodleCourseController;
             
 
 Route::get('/', function () {return redirect('sign-in');})->middleware('guest');
@@ -109,6 +110,13 @@ Route::group(['middleware' => 'auth'], function () {
 
             Route::get('issue', [MoodleCertificateController::class, 'showIssueForm'])->name('issue.form');
             Route::post('issue', [MoodleCertificateController::class, 'handleIssueCertificate'])->name('issue.submit');
+        });
+
+        // Moodle Course Management Routes
+        Route::prefix('courses')->name('courses.')->group(function () {
+            Route::get('/', [MoodleCourseController::class, 'index'])->name('index');
+            Route::post('{courseId}/toggle-visibility', [MoodleCourseController::class, 'toggleVisibility'])->name('toggle-visibility');
+            // Add other course management routes if needed (e.g., edit details, sync single course)
         });
     });
 });

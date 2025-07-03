@@ -427,4 +427,20 @@ class MoodleApiService
     // e.g., `mod_quiz_get_user_attempts`, `mod_quiz_get_user_best_grade` for quizzes.
     // `forum_get_discussion_posts` etc. for forums.
     // These would be added here as required for specific reports.
+
+    /**
+     * Update one or more courses in Moodle.
+     * Corresponds to Moodle's `core_course_update_courses`.
+     * Used here specifically for updating visibility.
+     *
+     * @param array $coursesData Array of course data to update. Each item must have 'id'.
+     *                           To change visibility: ['id' => COURSE_ID, 'visible' => 0 or 1]
+     * @return Response
+     * @throws RequestException
+     */
+    public function updateCourses(array $coursesData): Response
+    {
+        // API expects courses[0][id]=..., courses[0][visible]=...
+        return $this->makeRequest('core_course_update_courses', ['courses' => $coursesData]);
+    }
 }
