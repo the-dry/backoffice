@@ -182,6 +182,15 @@
                     <span class="nav-link-text ms-1">Gestión de Cursos</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark {{ $activePage == 'moodle-reports-global-user-detail' ? 'active bg-gradient-primary' : '' }} "
+                   href="{{ route('moodle.reports.global-user-detail.form') }}">
+                    <div class="text-dark text-center me-2 d-flex align-items-center justify-content-center">
+                        <i style="font-size: 1rem;" class="fas fa-globe-americas ps-2 pe-2 text-center"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Reporte Global Alumnos</span>
+                </a>
+            </li>
             {{-- Add other Moodle related links here as modules are built --}}
         </ul>
     </div>

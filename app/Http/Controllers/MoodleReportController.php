@@ -330,4 +330,132 @@ class MoodleReportController extends Controller
 
         return view('moodle.reports.detailed-course-analysis-show', compact('courseDetails', 'reportData', 'courseActivities'));
     }
+
+    /**
+     * Show a form or options for the Global User Detail Report.
+     * This might include filters for users (e.g., by cohort, first letter of lastname, etc.)
+     * to avoid fetching all users if the Moodle instance is very large.
+     */
+    public function showGlobalUserDetailReportForm(Request $request)
+    {
+        // For now, no specific filters on the form, will attempt to fetch all users.
+        // Add filters here if needed (e.g., input for user ID, email, namecontains)
+        return view('moodle.reports.global-user-detail-form');
+    }
+
+    /**
+     * Generate and display the Global User Detail Report.
+     * This report lists each user and all courses they are enrolled in, with their status/grade.
+     */
+    public function generateGlobalUserDetailReport(Request $request)
+    {
+        // TODO: Implement pagination for users if fetching all is too slow.
+        // For now, fetching all users (can be very resource-intensive).
+        // Consider adding filters in showGlobalUserDetailReportForm and passing them here.
+        $moodleUsers = [];
+        $reportLines = []; // Each line: user_info, course_info, progress_info
+
+        try {
+            $usersResponse = $this->moodleApiService->getUsers([['key' => 'deleted', 'value' => 0]]); // Get non-deleted users
+            if ($usersResponse->successful()) {
+                $usersData = $usersResponse->json()['users'] ?? ($usersResponse->json() ?? []);
+                 if (is_array($usersData) && isset($usersData['users']) && is_array($usersData['users'])) { // Handle Moodle's inconsistent response
+                    $usersData = $usersData['users'];
+                }
+                $moodleUsers = is_array($usersData) ? $usersData : [];
+
+            } else {
+                return redirect()->route('moodle.reports.global-user-detail.form')->with('error', 'No se pudieron obtener los usuarios de Moodle.');
+            }
+
+            if (empty($moodleUsers)) {
+                 return redirect()->route('moodle.reports.global-user-detail.form')->with('info', 'No se encontraron usuarios en Moodle para generar el reporte.');
+            }
+
+            foreach ($moodleUsers as $user) {
+                if (!isset($user['id'])) continue;
+                $userId = $user['id'];
+
+                $userCoursesResponse = $this->moodleApiService->getUserCourses($userId);
+                if ($userCoursesResponse->successful()) {
+                    $coursesEnrolled = $userCoursesResponse->json();
+                    if (is_array($coursesEnrolled) && !empty($coursesEnrolled)) {
+                        foreach ($coursesEnrolled as $course) {
+                            if (!isset($course['id'])) continue;
+                            $courseId = $course['id'];
+
+                            $completionStatus = 'N/A';
+                            $grade = 'N/A';
+
+                            // Get completion
+                            $completionResponse = $this->moodleApiService->getCourseCompletionStatus($courseId, $userId);
+                            if ($completionResponse->successful() && isset($completionResponse->json()['completionstatus'])) {
+                                $status = $completionResponse->json()['completionstatus'];
+                                $completionStatus = $status['completed'] ? 'Completado' : 'En Progreso';
+                            }
+
+                            // Get grade
+                            $gradesResponse = $this->moodleApiService->getUserGradesInCourse($courseId, $userId);
+                            if ($gradesResponse->successful() && isset($gradesResponse->json()['usergrades'][0]['gradeitems'])) {
+                                 $gradeItems = $gradesResponse->json()['usergrades'][0]['gradeitems'];
+                                 foreach ($gradeItems as $item) {
+                                     if (($item['itemtype'] ?? '') === 'course') {
+                                         $grade = $item['gradeformatted'] ?? ($item['graderaw'] ?? 'N/A');
+                                         break;
+                                     }
+                                 }
+                            }
+
+                            $reportLines[] = [
+                                'user_id' => $userId,
+                                'user_fullname' => $user['fullname'] ?? 'N/A',
+                                'user_email' => $user['email'] ?? 'N/A',
+                                'course_id' => $courseId,
+                                'course_fullname' => $course['fullname'] ?? 'N/A',
+                                'completion_status' => $completionStatus,
+                                'grade' => $grade,
+                                // TODO: Add 'establecimiento', 'ley contractual', etc. if/when available
+                                // These would likely come from $user['customfields'] or a local DB mapping
+                            ];
+                        }
+                    } else {
+                        // User might not be enrolled in any courses, or only in "site home" which might be filtered by API
+                         $reportLines[] = [
+                            'user_id' => $userId,
+                            'user_fullname' => $user['fullname'] ?? 'N/A',
+                            'user_email' => $user['email'] ?? 'N/A',
+                            'course_id' => null,
+                            'course_fullname' => 'Sin cursos inscritos (o error al obtenerlos)',
+                            'completion_status' => 'N/A',
+                            'grade' => 'N/A',
+                        ];
+                    }
+                } else {
+                    Log::warning("Could not fetch courses for user ID {$userId}. Response: " . $userCoursesResponse->body());
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error generating global user detail report: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->route('moodle.reports.global-user-detail.form')->with('error', 'Error al generar el reporte global por alumno: ' . $e->getMessage());
+        }
+
+        // For now, no specific view for this, just pass to a generic table view or prepare for export.
+        // Storing in session for potential export.
+        session([
+            'global_user_detail_report_data' => $reportLines,
+            'global_user_detail_report_name' => 'Reporte_Global_Detalle_Alumnos'
+        ]);
+
+        // This report can be very large, so direct view might not be ideal.
+        // For now, let's redirect to a page that confirms generation and offers download.
+        // Or, directly offer download if that's the primary goal.
+        // For this step, let's just show a simplified success message and prepare for export.
+        // A proper view would paginate $reportLines.
+
+        // return view('moodle.reports.global-user-detail-show', compact('reportLines'));
+        return redirect()->route('moodle.reports.global-user-detail.form')
+                         ->with('success', 'Reporte Global por Alumno generado. Datos listos para exportar (próximo paso). Cantidad de registros: ' . count($reportLines));
+
+    }
 }

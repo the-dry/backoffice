@@ -443,4 +443,21 @@ class MoodleApiService
         // API expects courses[0][id]=..., courses[0][visible]=...
         return $this->makeRequest('core_course_update_courses', ['courses' => $coursesData]);
     }
+
+    /**
+     * Get all courses a user is enrolled in.
+     * Corresponds to Moodle's `core_enrol_get_users_courses`.
+     *
+     * @param int $userId The Moodle user ID.
+     * @param bool $returnusercount Whether to return course count or not for the user.
+     * @return Response
+     * @throws RequestException
+     */
+    public function getUserCourses(int $userId, bool $returnusercount = false): Response
+    {
+        return $this->makeRequest('core_enrol_get_users_courses', [
+            'userid' => $userId,
+            'returnusercount' => $returnusercount,
+        ]);
+    }
 }
